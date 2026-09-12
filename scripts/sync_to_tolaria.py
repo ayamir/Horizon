@@ -18,11 +18,15 @@ import argparse
 import json
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 DEFAULT_VAULT = Path.home() / "Documents" / "Tolaria"
 NEWS_TYPE = "news"
+# Preferred artifact order for the note body. The vault notes are written in
+# Chinese, so ask for `zh` first and fall back to whatever exists.
+DISPLAY_LANGUAGES = ["zh", "en"]
 
 # Profile slug -> section heading shown in the note.
 PROFILE_LABELS = {
@@ -32,6 +36,30 @@ PROFILE_LABELS = {
     "news": "新闻",
 }
 PROFILE_ORDER = ["tech-news", "tech-blog", "finance-news", "news"]
+
+
+def _display_time(value: Any) -> str:
+    """Render an ISO timestamp as a compact local date and time."""
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return text
+    return parsed.astimezone().strftime("%Y-%m-%d %H:%M")
+
+
+def normalize_profile(value: Any) -> str:
+    """Collapse a profile value into one section slug.
+
+    Telegram channels can route to several profiles, so ``profile`` may be a
+    list. Pick the first entry and keep the section stable.
+    """
+    if isinstance(value, (list, tuple)):
+        value = value[0] if value else None
+    text = str(value).strip() if value is not None else ""
+    return text or "news"
 
 
 def yaml_quote(value: str) -> str:
@@ -69,7 +97,7 @@ def build_frontmatter(payload: Dict[str, Any], items: List[Dict[str, Any]]) -> s
         f"total_fetched: {payload.get('total_fetched') or 0}",
     ]
     profiles = sorted(
-        {str(i.get("profile") or "news") for i in items},
+        {normalize_profile(i.get("profile")) for i in items},
         key=lambda p: PROFILE_ORDER.index(p) if p in PROFILE_ORDER else 99,
     )
     lines.append("profiles:")
@@ -94,26 +122,58 @@ def _artifact_for(item: Dict[str, Any], languages: List[str]) -> Optional[Dict[s
     return None
 
 
-def build_toc(items: List[Dict[str, Any]]) -> str:
-    """Render a linked table of contents grouped by profile."""
-    grouped: Dict[str, List[Tuple[int, Dict[str, Any]]]] = {}
-    for idx, item in enumerate(items, start=1):
-        grouped.setdefault(str(item.get("profile") or "news"), []).append((idx, item))
+def display_title(item: Dict[str, Any], artifact: Optional[Dict[str, Any]]) -> str:
+    """Prefer the localized artifact title over the source's own title."""
+    if artifact and artifact.get("title"):
+        return str(artifact["title"])
+    return str(item["title"])
 
-    ordered = sorted(
-        grouped.items(),
-        key=lambda kv: PROFILE_ORDER.index(kv[0]) if kv[0] in PROFILE_ORDER else 99,
-    )
 
+def display_summary(item: Dict[str, Any], artifact: Optional[Dict[str, Any]]) -> str:
+    """Use the localized summary block when present."""
+    if artifact:
+        for block in artifact.get("blocks") or []:
+            if block.get("primary") and block.get("content"):
+                return str(block["content"])
+    return str(item.get("summary") or "")
+
+
+def _grouped(items: List[Dict[str, Any]]) -> List[Tuple[str, List[Tuple[int, Dict[str, Any]]]]]:
+    """Bucket items by profile, renumbering each bucket from 1.
+
+    Profile sections are rendered independently, so a global running number
+    would jump (e.g. section two starting at 9) and read like a missing item.
+    """
+    grouped: Dict[str, List[Dict[str, Any]]] = {}
+    for item in items:
+        grouped.setdefault(normalize_profile(item.get("profile")), []).append(item)
+    return [
+        (profile, list(enumerate(bucket, start=1)))
+        for profile, bucket in sorted(
+            grouped.items(),
+            key=lambda kv: PROFILE_ORDER.index(kv[0]) if kv[0] in PROFILE_ORDER else 99,
+        )
+    ]
+
+
+def build_toc(items: List[Dict[str, Any]], languages: List[str]) -> str:
+    """Render a clickable table of contents grouped by profile.
+
+    Entries use raw HTML anchors because the vault renderer does not reliably
+    resolve ``[text](#id)`` links to inline ``<a id>`` targets.
+    """
     lines: List[str] = []
-    for profile, entries in ordered:
+    for profile, entries in _grouped(items):
         lines.append(f"**{PROFILE_LABELS.get(profile, profile)}**")
         lines.append("")
         for idx, item in entries:
+            artifact = _artifact_for(item, languages)
             anchor = anchor_for(item, idx)
             score = item.get("score")
-            suffix = f" ⭐️ {score}/10" if score is not None else ""
-            lines.append(f"{idx}. [{item['title']}](#{anchor}){suffix}")
+            suffix = f" — ⭐️ {score}/10" if score is not None else ""
+            lines.append(
+                f'{idx}. <a href="#{anchor}">{display_title(item, artifact)}</a>{suffix}'
+            )
         lines.append("")
     return "\n".join(lines).strip()
 
@@ -123,28 +183,33 @@ def build_item_section(item: Dict[str, Any], idx: int, languages: List[str]) -> 
     parts: List[str] = []
     anchor = anchor_for(item, idx)
     score = item.get("score")
+    artifact = _artifact_for(item, languages)
 
-    heading = item["title"]
-    if score is not None:
-        heading = f"{heading} ⭐️ {score}/10"
+    title = display_title(item, artifact)
     parts.append(f'<a id="{anchor}"></a>')
-    parts.append(f"### {idx}. [{heading}]({item['url']})")
+    parts.append(
+        f'### {idx}. [{title}]({item["url"]})'
+        + (f" — ⭐️ {score}/10" if score is not None else "")
+    )
 
-    profile = str(item.get("profile") or "news")
+    profile = normalize_profile(item.get("profile"))
     meta_bits = [f"`{item['source_type']}`"]
     if item.get("author"):
         meta_bits.append(str(item["author"]))
     if item.get("published_at"):
-        meta_bits.append(str(item["published_at"]))
+        meta_bits.append(_display_time(item["published_at"]))
     meta_bits.append(PROFILE_LABELS.get(profile, profile))
     parts.append(" · ".join(meta_bits))
 
-    if item.get("summary"):
-        parts.append(str(item["summary"]))
+    summary = display_summary(item, artifact)
+    if summary:
+        parts.append(summary)
 
-    artifact = _artifact_for(item, languages)
     if artifact:
         for block in artifact.get("blocks") or []:
+            if block.get("primary"):
+                # Already emitted above as the localized summary.
+                continue
             title = block.get("title")
             content = block.get("content")
             if not content:
@@ -168,7 +233,11 @@ def build_item_section(item: Dict[str, Any], idx: int, languages: List[str]) -> 
 def build_body(payload: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
     """Compose the full note: intro, TOC, then every entry."""
     date = payload["date"]
-    languages = payload.get("languages") or ["en"]
+    # Always render the note in the preferred language rather than trusting the
+    # pipeline's own language order, which lists `en` first.
+    languages = DISPLAY_LANGUAGES + [
+        lang for lang in (payload.get("languages") or []) if lang not in DISPLAY_LANGUAGES
+    ]
     total = payload.get("total_fetched") or 0
 
     parts: List[str] = []
@@ -177,17 +246,9 @@ def build_body(payload: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
         if total
         else f"> 本日筛选出 {len(items)} 条重要资讯。"
     )
-    parts.append("## 目录\n\n" + build_toc(items))
+    parts.append("## 目录\n\n" + build_toc(items, languages))
 
-    grouped: Dict[str, List[Tuple[int, Dict[str, Any]]]] = {}
-    for idx, item in enumerate(items, start=1):
-        grouped.setdefault(str(item.get("profile") or "news"), []).append((idx, item))
-
-    ordered = sorted(
-        grouped.items(),
-        key=lambda kv: PROFILE_ORDER.index(kv[0]) if kv[0] in PROFILE_ORDER else 99,
-    )
-    for profile, entries in ordered:
+    for profile, entries in _grouped(items):
         parts.append(f"## {PROFILE_LABELS.get(profile, profile)}")
         for idx, item in entries:
             parts.append(build_item_section(item, idx, languages))

@@ -12,7 +12,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ..models import ContentItem
 
@@ -46,6 +46,20 @@ def _serialize_artifact(language: str, artifact: Any) -> Dict[str, Any]:
     }
 
 
+def _source_category(item: ContentItem) -> Optional[str]:
+    """Return the source-declared category, or None when the source has none.
+
+    The category lives on the source configuration and is copied into
+    ``item.metadata`` by the scrapers; it is what ``digest.category_groups``
+    uses to apply per-category quotas. Telegram routes to several profiles and
+    stores a list here, so keep the first entry for a stable scalar.
+    """
+    raw = (item.metadata or {}).get("category")
+    if isinstance(raw, list):
+        return str(raw[0]) if raw else None
+    return str(raw) if raw is not None else None
+
+
 def serialize_item(item: ContentItem) -> Dict[str, Any]:
     """Convert an enriched ContentItem into a JSON-safe dict."""
     processing = item.processing
@@ -64,7 +78,7 @@ def serialize_item(item: ContentItem) -> Dict[str, Any]:
         "summary": getattr(analysis, "summary", None) if analysis else None,
         "reason": getattr(analysis, "reason", None) if analysis else None,
         "tags": list(getattr(analysis, "tags", []) or []) if analysis else [],
-        "category": getattr(classification, "category", None) if classification else None,
+        "category": _source_category(item),
         "artifacts": {
             lang: _serialize_artifact(lang, artifact)
             for lang, artifact in (processing.artifacts.items() if processing else [])
