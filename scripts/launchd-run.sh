@@ -45,4 +45,17 @@ if ! "$SCRIPT_DIR/run-with-envkey.sh" --hours 24; then
     exit 1
 fi
 
+# 4. Mirror today's digest into the Tolaria vault as a single `news` note.
+#    Auxiliary: a missing or unmounted vault must not fail the run.
+VAULT="${TOLARIA_VAULT:-$HOME/Documents/Tolaria}"
+if [ -d "$VAULT" ]; then
+    if uv run python "$SCRIPT_DIR/sync_to_tolaria.py" --latest --vault "$VAULT" 2>&1; then
+        echo "$LOG_PREFIX Tolaria sync complete"
+    else
+        echo "$LOG_PREFIX WARN: Tolaria sync failed" >&2
+    fi
+else
+    echo "$LOG_PREFIX WARN: vault not found at $VAULT; skipping Tolaria sync" >&2
+fi
+
 echo "$LOG_PREFIX === Horizon launchd run finished ==="

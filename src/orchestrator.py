@@ -31,6 +31,7 @@ from .ai.analyzer import ContentAnalyzer
 from .ai.summarizer import DailySummarizer
 from .ai.enricher import ContentEnricher, EnrichmentBatchResult
 from .ai.tokens import get_usage_snapshot
+from .processing.digest_export import build_export, write_export
 from .processing import ProfileRegistry
 
 
@@ -291,8 +292,29 @@ class HorizonOrchestrator:
             # 6. Search related stories + enrich with background knowledge (2nd AI pass)
             await self.enrich_items(important_items)
 
-            # 7. Generate and save daily summaries for each configured language
+            # 6b. Export a structured snapshot for downstream consumers (e.g. the
+            #     Tolaria sync). This is auxiliary: never fail the run over it.
             today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            try:
+                payload = build_export(
+                    date=today,
+                    items=important_items,
+                    total_fetched=len(all_items),
+                    languages=self.config.ai.languages,
+                )
+                export_path = write_export(
+                    self.storage.data_dir, payload, today
+                )
+                self.console.print(
+                    f"{self.icons['save']} Exported {len(important_items)} items to: "
+                    f"{export_path}\n"
+                )
+            except Exception as e:
+                self.console.print(
+                    f"[yellow]{self.icons['warning']} Failed to export items: {e}[/yellow]\n"
+                )
+
+            # 7. Generate and save daily summaries for each configured language
             for lang in self.config.ai.languages:
                 summarizer = DailySummarizer(
                     profile_names=self.profiles.names,
