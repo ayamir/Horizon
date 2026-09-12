@@ -9,6 +9,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 LOG_PREFIX="[$(date '+%Y-%m-%d %H:%M:%S')]"
 
+# cron provides a minimal PATH; make uv and envkey reachable.
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
 retry() {
     local attempt
     for attempt in 1 2 3; do
@@ -34,8 +37,8 @@ git merge --ff-only origin/main
 # 2. Install/update dependencies
 uv sync --quiet
 
-# 3. Run Horizon
-uv run horizon --hours 24
+# 3. Run Horizon (secrets injected from envkey; see run-with-envkey.sh)
+./scripts/run-with-envkey.sh --hours 24
 
 # 4. Deploy docs to gh-pages
 echo "$LOG_PREFIX Deploying to gh-pages..."
