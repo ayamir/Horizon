@@ -33,8 +33,10 @@ else
     echo "$LOG_PREFIX WARN: git fetch failed; running current checkout" >&2
 fi
 
-# 2. Install/update dependencies.
-if ! uv sync --quiet 2>&1; then
+# 2. Install/update dependencies. Keep the optional extras that enabled
+#    sources depend on: Twitter is configured with mode=playwright, so a plain
+#    `uv sync` would uninstall Playwright and silently disable the source.
+if ! uv sync --quiet --extra twitter 2>&1; then
     echo "$LOG_PREFIX FATAL: uv sync failed" >&2
     exit 1
 fi
