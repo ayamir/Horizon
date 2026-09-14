@@ -7,7 +7,11 @@ import httpx
 
 from src.models import TwitterConfig
 from src.scrapers.twitter import TwitterScraper
-from src.scrapers.twitter_playwright import TwitterPlaywrightScraper
+from src.scrapers.twitter_playwright import (
+    TWEET_OPERATIONS,
+    TwitterPlaywrightScraper,
+    extract_tweets_from_payload,
+)
 
 
 def _make_config(**kwargs) -> TwitterConfig:
@@ -438,3 +442,108 @@ def test_fetch_replies_no_conversation_id_returns_empty(monkeypatch):
     assert result == []
 
 
+
+
+# --- Playwright GraphQL parsing regressions ---
+
+
+def _legacy(**overrides) -> dict:
+    base = {
+        "full_text": "Hello from X",
+        "created_at": "Mon Sep 14 10:00:00 +0000 2026",
+        "conversation_id_str": "123456",
+    }
+    base.update(overrides)
+    return base
+
+
+def test_parse_flat_result_shape():
+    """Older payloads put rest_id/legacy directly on the result."""
+    payload = {"data": {"user": {"result": {
+        "rest_id": "123456", "legacy": _legacy(),
+    }}}}
+    found: list[dict] = []
+
+    extract_tweets_from_payload(payload, found)
+
+    assert [t["tweet_id"] for t in found] == ["123456"]
+    assert found[0]["text"] == "Hello from X"
+
+
+def test_parse_nested_tweet_shape():
+    """Current payloads nest `legacy` under `tweet`, not beside `rest_id`.
+
+    Real `UserOriginalsTimeline` entries look like
+    ``result.tweet.rest_id`` + ``result.tweet.legacy.full_text``, so a parser
+    that requires `rest_id` and `legacy` on the same object drops every tweet.
+    """
+    payload = {"data": {"user": {"result": {"timeline": {"instructions": [
+        {"type": "TimelineAddEntries", "entries": [
+            {"content": {"itemContent": {"tweet_results": {"result": {
+                "__typename": "Tweet",
+                "tweet": {
+                    "rest_id": "999",
+                    "legacy": _legacy(full_text="nested"),
+                },
+            }}}}},
+        ]},
+    ]}}}}}
+    found: list[dict] = []
+
+    extract_tweets_from_payload(payload, found)
+
+    assert [t["tweet_id"] for t in found] == ["999"]
+    assert found[0]["text"] == "nested"
+
+
+
+def test_parse_deduplicates_repeated_tweets():
+    entry = {"result": {"rest_id": "1", "legacy": _legacy()}}
+    payload = {"a": entry, "b": entry}
+    found: list[dict] = []
+
+    extract_tweets_from_payload(payload, found)
+
+    assert len(found) == 1
+
+
+def test_parse_marks_retweet_from_legacy():
+    """`retweeted_status_result` lives under legacy, not under core."""
+    payload = {"result": {
+        "rest_id": "1",
+        "legacy": _legacy(retweeted_status_result={"rest_id": "2"}),
+    }}
+    found: list[dict] = []
+
+    extract_tweets_from_payload(payload, found)
+
+    assert found[0]["is_retweet"] is True
+
+
+def test_parse_ignores_non_tweet_objects():
+    found: list[dict] = []
+
+    extract_tweets_from_payload({"data": {"user": {"result": {"rest_id": "1"}}}}, found)
+
+    assert found == []
+
+
+def test_timeline_operation_rename_is_covered():
+    """X renamed UserTweets to UserOriginalsTimeline; both must match."""
+    assert "UserTweets" in TWEET_OPERATIONS
+    assert "UserOriginalsTimeline" in TWEET_OPERATIONS
+
+
+def test_extracts_images_and_parses_datetime():
+    payload = {"result": {"rest_id": "7", "legacy": _legacy(
+        extended_entities={"media": [
+            {"type": "photo", "media_url_https": "https://img/1.jpg"},
+            {"type": "video", "media_url_https": "https://img/2.mp4"},
+        ]},
+    )}}
+    found: list[dict] = []
+
+    extract_tweets_from_payload(payload, found)
+
+    assert found[0]["images"] == ["https://img/1.jpg"]
+    assert found[0]["datetime"].startswith("2026-09-14")

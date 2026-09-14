@@ -38,6 +38,71 @@ def _get_proxy() -> str:
 
 PROXY = _get_proxy()
 
+# GraphQL operations that carry a profile's tweets. X renamed the timeline
+# operation from `UserTweets` to `UserOriginalsTimeline`; match both so either
+# rollout works and a rename cannot silently produce zero tweets.
+TWEET_OPERATIONS = ("UserTweets", "UserOriginalsTimeline")
+
+
+def _normalize_tweet_node(obj: object) -> Optional[dict]:
+    """Return the node holding `rest_id` and `legacy`, whatever the shape.
+
+    Older responses put both fields directly on the result object. Current
+    responses wrap them: ``result.tweet.rest_id`` / ``result.tweet.legacy``.
+    """
+    if not isinstance(obj, dict):
+        return None
+    if obj.get("rest_id") and obj.get("legacy"):
+        return obj
+    inner = obj.get("tweet")
+    if isinstance(inner, dict) and inner.get("rest_id"):
+        return inner
+    return None
+
+
+def extract_tweets_from_payload(data: object, found: List[dict]) -> None:
+    """Collect tweets from a GraphQL payload into ``found``, deduplicated.
+
+    Walks the payload generically so unrelated schema changes do not break it.
+    """
+    if isinstance(data, dict):
+        node = _normalize_tweet_node(data)
+        if node is not None:
+            legacy = node["legacy"]
+            media_entities = (
+                legacy.get("extended_entities", {}).get("media", [])
+                or legacy.get("entities", {}).get("media", [])
+            )
+            images = [
+                m["media_url_https"]
+                for m in media_entities
+                if m.get("type") == "photo" and m.get("media_url_https")
+            ]
+            tweet = {
+                "tweet_id": node["rest_id"],
+                "text": legacy.get("full_text", ""),
+                "datetime_raw": legacy.get("created_at", ""),
+                "is_retweet": (
+                    "retweeted_status_result" in legacy
+                    or "retweeted_status_id_str" in legacy
+                ),
+                "images": images,
+            }
+            try:
+                dt = datetime.strptime(
+                    tweet["datetime_raw"], "%a %b %d %H:%M:%S %z %Y"
+                )
+                tweet["datetime"] = dt.isoformat()
+            except (ValueError, TypeError):
+                tweet["datetime"] = tweet["datetime_raw"]
+            if not any(t["tweet_id"] == tweet["tweet_id"] for t in found):
+                found.append(tweet)
+        for value in data.values():
+            extract_tweets_from_payload(value, found)
+    elif isinstance(data, list):
+        for item in data:
+            extract_tweets_from_payload(item, found)
+
 
 def _load_browser_cookies(file_path: str) -> list[dict]:
     """Read browser-exported cookie JSON and convert to Playwright format."""
@@ -203,47 +268,14 @@ class TwitterPlaywrightScraper(BaseScraper):
         graphql_tweets: list[dict] = []
 
         async def handle_response(response):
-            if "UserTweets" not in response.url and "UserByScreenName" not in response.url:
+            if not any(
+                op in response.url
+                for op in TWEET_OPERATIONS + ("UserByScreenName",)
+            ):
                 return
             try:
                 data = await response.json()
-
-                def extract_tweets(obj):
-                    if isinstance(obj, dict):
-                        if obj.get("rest_id") and obj.get("legacy"):
-                            legacy = obj["legacy"]
-                            media_entities = (
-                                legacy.get("extended_entities", {}).get("media", [])
-                                or legacy.get("entities", {}).get("media", [])
-                            )
-                            images = [
-                                m["media_url_https"]
-                                for m in media_entities
-                                if m.get("type") == "photo" and m.get("media_url_https")
-                            ]
-                            tweet = {
-                                "tweet_id": obj["rest_id"],
-                                "text": legacy.get("full_text", ""),
-                                "datetime_raw": legacy.get("created_at", ""),
-                                "is_retweet": (
-                                    "retweeted_status_result" in obj.get("core", {})
-                                    or "retweeted_status_id_str" in legacy
-                                ),
-                                "images": images,
-                            }
-                            try:
-                                dt = datetime.strptime(tweet["datetime_raw"], "%a %b %d %H:%M:%S %z %Y")
-                                tweet["datetime"] = dt.isoformat()
-                            except (ValueError, TypeError):
-                                tweet["datetime"] = tweet["datetime_raw"]
-                            graphql_tweets.append(tweet)
-                        for v in obj.values():
-                            extract_tweets(v)
-                    elif isinstance(obj, list):
-                        for item in obj:
-                            extract_tweets(item)
-
-                extract_tweets(data)
+                extract_tweets_from_payload(data, graphql_tweets)
             except Exception as exc:
                 logger.debug("GraphQL parse error: %s", exc)
 
