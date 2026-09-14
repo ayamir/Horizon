@@ -317,49 +317,56 @@
         "url": "https://blog.rust-lang.org/feed.xml",
         "enabled": true,
         "profile": "tech-news",
-        "category": "rust-go"
+        "category": "rust-go",
+        "max_age_hours": 240
       },
       {
         "name": "This Week in Rust",
         "url": "https://this-week-in-rust.org/rss.xml",
         "enabled": true,
         "profile": "tech-news",
-        "category": "rust-go"
+        "category": "rust-go",
+        "max_age_hours": 240
       },
       {
         "name": "Rust Analyzer",
         "url": "https://rust-analyzer.github.io/feed.xml",
         "enabled": true,
         "profile": "tech-news",
-        "category": "rust-go"
+        "category": "rust-go",
+        "max_age_hours": 336
       },
       {
         "name": "Go Blog",
         "url": "https://go.dev/blog/feed.atom",
         "enabled": true,
         "profile": "tech-news",
-        "category": "rust-go"
+        "category": "rust-go",
+        "max_age_hours": 720
       },
       {
         "name": "Cloudflare Rust",
         "url": "https://blog.cloudflare.com/tag/rust/rss/",
         "enabled": true,
         "profile": "tech-news",
-        "category": "rust-go"
+        "category": "rust-go",
+        "max_age_hours": 1080
       },
       {
         "name": "Anyscale Blog",
         "url": "https://www.anyscale.com/blog/rss.xml",
         "enabled": true,
         "profile": "tech-news",
-        "category": "llm-inference"
+        "category": "llm-inference",
+        "max_age_hours": 720
       },
       {
         "name": "Neural Magic Blog",
         "url": "https://neuralmagic.com/blog/feed/",
         "enabled": true,
         "profile": "tech-news",
-        "category": "llm-inference"
+        "category": "llm-inference",
+        "max_age_hours": 720
       },
       {
         "name": "Ollama Blog",
@@ -373,28 +380,32 @@
         "url": "https://github.blog/changelog/feed/",
         "enabled": true,
         "profile": "tech-blog",
-        "category": "oss-tools"
+        "category": "oss-tools",
+        "max_age_hours": 168
       },
       {
         "name": "AWS Open Source Blog",
         "url": "https://aws.amazon.com/blogs/opensource/feed/",
         "enabled": true,
         "profile": "tech-blog",
-        "category": "oss-tools"
+        "category": "oss-tools",
+        "max_age_hours": 336
       },
       {
         "name": "Phoronix",
         "url": "https://www.phoronix.com/rss.php",
         "enabled": true,
         "profile": "tech-blog",
-        "category": "oss-tools"
+        "category": "oss-tools",
+        "max_age_hours": 168
       },
       {
         "name": "LWN.net Headlines",
         "url": "https://lwn.net/headlines/rss",
         "enabled": true,
         "profile": "tech-blog",
-        "category": "oss-tools"
+        "category": "oss-tools",
+        "max_age_hours": 168
       }
     ],
     "reddit": {
@@ -533,7 +544,7 @@
     "category_groups": {
       "ai": {
         "name": "AI & Infra",
-        "limit": 14,
+        "limit": 11,
         "categories": [
           "ai-tech",
           "ai-agents",
@@ -542,8 +553,20 @@
           "ai-tools",
           "llm-inference",
           "cuda",
-          "software-engineering",
-          "rust-go",
+          "software-engineering"
+        ]
+      },
+      "rust_go": {
+        "name": "Rust & Go",
+        "limit": 1,
+        "categories": [
+          "rust-go"
+        ]
+      },
+      "oss_tools": {
+        "name": "Open Source Tools",
+        "limit": 1,
+        "categories": [
           "oss-tools"
         ]
       },
