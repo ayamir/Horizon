@@ -69,13 +69,6 @@ def yaml_quote(value: str) -> str:
     return f'"{escaped}"'
 
 
-def anchor_for(item: Dict[str, Any], index: int) -> str:
-    """Stable HTML anchor for a digest entry."""
-    raw = str(item.get("metadata", {}).get("anchor") or item["id"])
-    slug = re.sub(r"[^A-Za-z0-9\-]", "", raw.replace(":", "-")).strip("-")
-    return f"item-{slug or index}"
-
-
 def build_frontmatter(payload: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
     """Compose Tolaria frontmatter for the daily digest note."""
     date = payload["date"]
@@ -157,10 +150,11 @@ def _grouped(items: List[Dict[str, Any]]) -> List[Tuple[str, List[Tuple[int, Dic
 
 
 def build_toc(items: List[Dict[str, Any]], languages: List[str]) -> str:
-    """Render a clickable table of contents grouped by profile.
+    """Render a plain table of contents grouped by profile.
 
-    Entries use raw HTML anchors because the vault renderer does not reliably
-    resolve ``[text](#id)`` links to inline ``<a id>`` targets.
+    Tolaria resolves wikilinks between notes but not anchors inside a note, so
+    a linked TOC here would be markup that looks interactive and does nothing.
+    Keep it as a scannable index and let the reader use search to jump.
     """
     lines: List[str] = []
     for profile, entries in _grouped(items):
@@ -168,12 +162,9 @@ def build_toc(items: List[Dict[str, Any]], languages: List[str]) -> str:
         lines.append("")
         for idx, item in entries:
             artifact = _artifact_for(item, languages)
-            anchor = anchor_for(item, idx)
             score = item.get("score")
             suffix = f" — ⭐️ {score}/10" if score is not None else ""
-            lines.append(
-                f'{idx}. <a href="#{anchor}">{display_title(item, artifact)}</a>{suffix}'
-            )
+            lines.append(f"{idx}. {display_title(item, artifact)}{suffix}")
         lines.append("")
     return "\n".join(lines).strip()
 
@@ -181,12 +172,10 @@ def build_toc(items: List[Dict[str, Any]], languages: List[str]) -> str:
 def build_item_section(item: Dict[str, Any], idx: int, languages: List[str]) -> str:
     """Render one digest entry."""
     parts: List[str] = []
-    anchor = anchor_for(item, idx)
     score = item.get("score")
     artifact = _artifact_for(item, languages)
 
     title = display_title(item, artifact)
-    parts.append(f'<a id="{anchor}"></a>')
     parts.append(
         f'### {idx}. [{title}]({item["url"]})'
         + (f" — ⭐️ {score}/10" if score is not None else "")
