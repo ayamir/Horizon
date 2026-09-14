@@ -94,6 +94,54 @@
         "enabled": true,
         "profile": "tech-news",
         "category": "ai-tools"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "rust-lang",
+        "repo": "rust",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "rust-go"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "tokio-rs",
+        "repo": "tokio",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "rust-go"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "golang",
+        "repo": "go",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "rust-go"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "ollama",
+        "repo": "ollama",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "llm-inference"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "huggingface",
+        "repo": "transformers",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "ai-infra"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "sgl-project",
+        "repo": "sglang",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "llm-inference"
       }
     ],
     "hackernews": {
@@ -263,6 +311,90 @@
         "enabled": true,
         "profile": "tech-blog",
         "category": "ai-research"
+      },
+      {
+        "name": "Rust Blog",
+        "url": "https://blog.rust-lang.org/feed.xml",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "rust-go"
+      },
+      {
+        "name": "This Week in Rust",
+        "url": "https://this-week-in-rust.org/rss.xml",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "rust-go"
+      },
+      {
+        "name": "Rust Analyzer",
+        "url": "https://rust-analyzer.github.io/feed.xml",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "rust-go"
+      },
+      {
+        "name": "Go Blog",
+        "url": "https://go.dev/blog/feed.atom",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "rust-go"
+      },
+      {
+        "name": "Cloudflare Rust",
+        "url": "https://blog.cloudflare.com/tag/rust/rss/",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "rust-go"
+      },
+      {
+        "name": "Anyscale Blog",
+        "url": "https://www.anyscale.com/blog/rss.xml",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "llm-inference"
+      },
+      {
+        "name": "Neural Magic Blog",
+        "url": "https://neuralmagic.com/blog/feed/",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "llm-inference"
+      },
+      {
+        "name": "Ollama Blog",
+        "url": "https://ollama.com/blog/rss.xml",
+        "enabled": true,
+        "profile": "tech-news",
+        "category": "llm-inference"
+      },
+      {
+        "name": "GitHub Changelog",
+        "url": "https://github.blog/changelog/feed/",
+        "enabled": true,
+        "profile": "tech-blog",
+        "category": "oss-tools"
+      },
+      {
+        "name": "AWS Open Source Blog",
+        "url": "https://aws.amazon.com/blogs/opensource/feed/",
+        "enabled": true,
+        "profile": "tech-blog",
+        "category": "oss-tools"
+      },
+      {
+        "name": "Phoronix",
+        "url": "https://www.phoronix.com/rss.php",
+        "enabled": true,
+        "profile": "tech-blog",
+        "category": "oss-tools"
+      },
+      {
+        "name": "LWN.net Headlines",
+        "url": "https://lwn.net/headlines/rss",
+        "enabled": true,
+        "profile": "tech-blog",
+        "category": "oss-tools"
       }
     ],
     "reddit": {
@@ -292,17 +424,27 @@
       "fetch_comments": 5
     },
     "twitter": {
-      "enabled": false,
+      "enabled": true,
       "users": [
         "karpathy",
-        "ylecun"
+        "ylecun",
+        "simonw",
+        "swyx",
+        "hwchase17",
+        "vllm_project",
+        "ggerganov",
+        "ollama",
+        "rustlang",
+        "golang"
       ],
       "fetch_limit": 10,
       "fetch_reply_text": false,
       "max_replies_per_tweet": 3,
       "max_tweets_to_expand": 10,
       "reply_min_likes": 5,
-      "profile": "tech-news"
+      "profile": "tech-news",
+      "mode": "playwright",
+      "category": "ai-tech"
     },
     "openbb": {
       "enabled": false,
@@ -400,7 +542,9 @@
           "ai-tools",
           "llm-inference",
           "cuda",
-          "software-engineering"
+          "software-engineering",
+          "rust-go",
+          "oss-tools"
         ]
       },
       "finance": {
