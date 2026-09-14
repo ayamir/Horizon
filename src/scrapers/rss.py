@@ -5,7 +5,7 @@ import hashlib
 import logging
 import os
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from email.utils import parsedate_to_datetime
 import httpx
@@ -72,6 +72,14 @@ class RSSScraper(BaseScraper):
         """
         items = []
 
+        # Weekly and monthly feeds publish nothing inside the global daily
+        # window, so allow each source to widen its own lookback.
+        effective_since = since
+        if source.max_age_hours:
+            effective_since = min(
+                since, datetime.now(timezone.utc) - timedelta(hours=source.max_age_hours)
+            )
+
         try:
             # Expand environment variables in URL (e.g. ${LWN_TOKEN})
             feed_url = re.sub(
@@ -90,7 +98,7 @@ class RSSScraper(BaseScraper):
             for entry in feed.entries:
                 # Parse published date
                 published_at = self._parse_date(entry)
-                if not published_at or published_at < since:
+                if not published_at or published_at < effective_since:
                     continue
 
                 # Generate unique ID from feed URL and entry ID

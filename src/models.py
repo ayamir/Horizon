@@ -260,6 +260,10 @@ class RSSSourceConfig(BaseModel):
     category: Optional[str] = None
     content_extractor: Optional[str] = None
     profile: ProfileRoute = None
+    # Per-feed lookback override. Weekly or monthly publications (Rust Blog,
+    # This Week in Rust, Cloudflare) have nothing inside a 24h window, so the
+    # global `--hours` would silently drop them on nearly every run.
+    max_age_hours: Optional[int] = None
 
 
 class RedditSubredditConfig(BaseModel):

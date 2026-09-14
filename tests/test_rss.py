@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 from unittest.mock import MagicMock
 
@@ -107,3 +107,73 @@ def test_unknown_extractor_name_ignored() -> None:
 
     assert len(items) == 1
     assert items[0].content == "Short summary from feed."
+
+
+# --- Per-source lookback override ---
+
+def _old_feed(days_ago: int) -> str:
+    """Feed with one entry published `days_ago` days before now.
+
+    Built relative to the current time because the per-source override is
+    resolved against `now`, not against the caller's `since`.
+    """
+    published = datetime.now(timezone.utc) - timedelta(days=days_ago)
+    stamp = published.strftime("%a, %d %b %Y %H:%M:%S GMT")
+    return f"""<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"><channel><title>Weekly</title>
+  <item>
+    <guid>old-1</guid>
+    <title>Weekly post</title>
+    <link>https://example.com/weekly-1</link>
+    <pubDate>{stamp}</pubDate>
+    <description>Published weeks ago.</description>
+  </item>
+</channel></rss>
+"""
+
+
+def _fetch(source: RSSSourceConfig, since: datetime, days_ago: int = 21):
+    client = _make_feed_client(_old_feed(days_ago))
+    scraper = RSSScraper([source], client)
+    return asyncio.run(scraper._fetch_feed(source, since))
+
+
+def test_old_entry_is_dropped_without_override() -> None:
+    """Without an override, an entry outside the global window is skipped."""
+    source = RSSSourceConfig(name="Weekly", url="https://example.com/rss")
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
+
+    assert _fetch(source, since, days_ago=21) == []
+
+
+def test_max_age_hours_admits_older_entries() -> None:
+    """A wider per-source window lets slow-cadence feeds through.
+
+    Uses the same `since` as the excluded case so the override is the only
+    difference: without it the 21-day-old entry is filtered out.
+    """
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    source = RSSSourceConfig(
+        name="Weekly",
+        url="https://example.com/rss",
+        max_age_hours=24 * 60,
+    )
+
+    items = _fetch(source, since, days_ago=21)
+
+    assert [i.title for i in items] == ["Weekly post"]
+
+
+def test_narrower_override_does_not_widen_the_global_window() -> None:
+    """The override never narrows the caller's window."""
+    source = RSSSourceConfig(
+        name="Weekly",
+        url="https://example.com/rss",
+        max_age_hours=1,
+    )
+    days_ago = 21
+    recent_since = datetime.now(timezone.utc) - timedelta(days=30)
+
+    items = _fetch(source, recent_since, days_ago=days_ago)
+
+    assert [i.title for i in items] == ["Weekly post"]
