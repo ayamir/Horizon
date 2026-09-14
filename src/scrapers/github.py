@@ -23,7 +23,7 @@ class GitHubScraper(BaseScraper):
             http_client: Shared async HTTP client
         """
         super().__init__({"sources": sources}, http_client)
-        self.token = os.getenv("GITHUB_TOKEN")
+        self.token = (os.getenv("GITHUB_TOKEN") or "").strip()
         self.base_url = "https://api.github.com"
 
     def _get_headers(self) -> dict:
@@ -36,7 +36,11 @@ class GitHubScraper(BaseScraper):
             "Accept": "application/vnd.github.v3+json",
             "User-Agent": "Horizon-Aggregator"
         }
-        if self.token:
+        # A placeholder or malformed token (e.g. the `ghp_xxx` stub shipped in
+        # .env.example) makes every request fail with 401, while the same
+        # request unauthenticated succeeds within the anonymous rate limit.
+        # Only attach credentials that at least look like a real token.
+        if self.token and len(self.token) >= 20:
             headers["Authorization"] = f"token {self.token}"
         return headers
 
