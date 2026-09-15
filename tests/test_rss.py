@@ -177,3 +177,73 @@ def test_narrower_override_does_not_widen_the_global_window() -> None:
     items = _fetch(source, recent_since, days_ago=days_ago)
 
     assert [i.title for i in items] == ["Weekly post"]
+
+
+# --- Per-source item cap ---
+
+def _multi_item_feed(count: int) -> str:
+    now = datetime.now(timezone.utc)
+    entries = "".join(
+        f"""  <item>
+    <guid>entry-{i}</guid>
+    <title>Item {i}</title>
+    <link>https://example.com/item-{i}</link>
+    <pubDate>{(now - timedelta(hours=i)).strftime("%a, %d %b %Y %H:%M:%S GMT")}</pubDate>
+    <description>Body {i}.</description>
+  </item>
+"""
+        for i in range(count)
+    )
+    return f"""<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"><channel><title>Many</title>
+{entries}</channel></rss>
+"""
+
+
+def test_fetch_limit_caps_returned_items() -> None:
+    """A wide window on a backlog-heavy feed must not flood the run."""
+    source = RSSSourceConfig(
+        name="Many",
+        url="https://example.com/rss",
+        max_age_hours=24 * 60,
+        fetch_limit=3,
+    )
+    scraper = RSSScraper([source], _make_feed_client(_multi_item_feed(10)))
+
+    items = asyncio.run(
+        scraper._fetch_feed(source, datetime.now(timezone.utc) - timedelta(hours=1))
+    )
+
+    assert len(items) == 3
+
+
+def test_fetch_limit_keeps_the_newest_items() -> None:
+    """The cap keeps the first (newest) entries, not an arbitrary slice."""
+    source = RSSSourceConfig(
+        name="Many",
+        url="https://example.com/rss",
+        max_age_hours=24 * 60,
+        fetch_limit=2,
+    )
+    scraper = RSSScraper([source], _make_feed_client(_multi_item_feed(10)))
+
+    items = asyncio.run(
+        scraper._fetch_feed(source, datetime.now(timezone.utc) - timedelta(hours=1))
+    )
+
+    assert [i.title for i in items] == ["Item 0", "Item 1"]
+
+
+def test_without_fetch_limit_all_items_are_returned() -> None:
+    source = RSSSourceConfig(
+        name="Many",
+        url="https://example.com/rss",
+        max_age_hours=24 * 60,
+    )
+    scraper = RSSScraper([source], _make_feed_client(_multi_item_feed(10)))
+
+    items = asyncio.run(
+        scraper._fetch_feed(source, datetime.now(timezone.utc) - timedelta(hours=1))
+    )
+
+    assert len(items) == 10

@@ -137,6 +137,11 @@ class RSSScraper(BaseScraper):
                 )
                 items.append(item)
 
+                # Feeds are usually newest-first; stop once the cap is met so
+                # a backlog-wide window does not cost extra LLM calls.
+                if source.fetch_limit and len(items) >= source.fetch_limit:
+                    break
+
         except httpx.HTTPError as e:
             logger.warning("Error fetching RSS feed %s: %s", source.name, e)
         except Exception as e:

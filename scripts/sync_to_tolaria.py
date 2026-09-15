@@ -37,6 +37,28 @@ PROFILE_LABELS = {
 }
 PROFILE_ORDER = ["tech-news", "tech-blog", "finance-news", "news"]
 
+# Sections are grouped by source category, ordered by reader priority:
+# agents > infra > language > other. Everything unmatched falls to "other".
+CATEGORY_SECTIONS = [
+    ("ai-agents", "AI Agents"),
+    ("ai-infra", "LLM Infrastructure"),
+    ("llm-inference", "LLM Infrastructure"),
+    ("ai-research", "LLM Infrastructure"),
+    ("cuda", "LLM Infrastructure"),
+    ("rust-go", "Rust & Go"),
+    ("oss-tools", "Open Source Tools"),
+    ("ai-tools", "Open Source Tools"),
+    ("software-engineering", "Open Source Tools"),
+    ("ai-tech", "其他"),
+    ("finance", "财经"),
+    ("news", "其他"),
+]
+
+# Ordered unique section headings derived from CATEGORY_SECTIONS.
+SECTION_ORDER = list(dict.fromkeys(label for _, label in CATEGORY_SECTIONS))
+
+CATEGORY_TO_SECTION = dict(CATEGORY_SECTIONS)
+
 
 def _display_time(value: Any) -> str:
     """Render an ISO timestamp as a compact local date and time."""
@@ -131,20 +153,33 @@ def display_summary(item: Dict[str, Any], artifact: Optional[Dict[str, Any]]) ->
     return str(item.get("summary") or "")
 
 
-def _grouped(items: List[Dict[str, Any]]) -> List[Tuple[str, List[Tuple[int, Dict[str, Any]]]]]:
-    """Bucket items by profile, renumbering each bucket from 1.
+def section_for(item: Dict[str, Any]) -> str:
+    """Map an item to its priority section, by source category."""
+    category = item.get("category")
+    if isinstance(category, (list, tuple)):
+        category = category[0] if category else None
+    if isinstance(category, str):
+        section = CATEGORY_TO_SECTION.get(category)
+        if section:
+            return section
+    # Fall back to the profile when the source declares no category.
+    return PROFILE_LABELS.get(normalize_profile(item.get("profile")), "其他")
 
-    Profile sections are rendered independently, so a global running number
-    would jump (e.g. section two starting at 9) and read like a missing item.
+
+def _grouped(items: List[Dict[str, Any]]) -> List[Tuple[str, List[Tuple[int, Dict[str, Any]]]]]:
+    """Bucket items into priority sections, renumbering each from 1.
+
+    Sections render independently, so a global running number would jump and
+    read like a missing item.
     """
     grouped: Dict[str, List[Dict[str, Any]]] = {}
     for item in items:
-        grouped.setdefault(normalize_profile(item.get("profile")), []).append(item)
+        grouped.setdefault(section_for(item), []).append(item)
     return [
-        (profile, list(enumerate(bucket, start=1)))
-        for profile, bucket in sorted(
+        (section, list(enumerate(bucket, start=1)))
+        for section, bucket in sorted(
             grouped.items(),
-            key=lambda kv: PROFILE_ORDER.index(kv[0]) if kv[0] in PROFILE_ORDER else 99,
+            key=lambda kv: SECTION_ORDER.index(kv[0]) if kv[0] in SECTION_ORDER else 99,
         )
     ]
 
@@ -157,8 +192,8 @@ def build_toc(items: List[Dict[str, Any]], languages: List[str]) -> str:
     Keep it as a scannable index and let the reader use search to jump.
     """
     lines: List[str] = []
-    for profile, entries in _grouped(items):
-        lines.append(f"**{PROFILE_LABELS.get(profile, profile)}**")
+    for section, entries in _grouped(items):
+        lines.append(f"**{section}**")
         lines.append("")
         for idx, item in entries:
             artifact = _artifact_for(item, languages)
@@ -181,13 +216,12 @@ def build_item_section(item: Dict[str, Any], idx: int, languages: List[str]) -> 
         + (f" — ⭐️ {score}/10" if score is not None else "")
     )
 
-    profile = normalize_profile(item.get("profile"))
     meta_bits = [f"`{item['source_type']}`"]
     if item.get("author"):
         meta_bits.append(str(item["author"]))
     if item.get("published_at"):
         meta_bits.append(_display_time(item["published_at"]))
-    meta_bits.append(PROFILE_LABELS.get(profile, profile))
+    meta_bits.append(section_for(item))
     parts.append(" · ".join(meta_bits))
 
     summary = display_summary(item, artifact)
@@ -237,8 +271,8 @@ def build_body(payload: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
     )
     parts.append("## 目录\n\n" + build_toc(items, languages))
 
-    for profile, entries in _grouped(items):
-        parts.append(f"## {PROFILE_LABELS.get(profile, profile)}")
+    for section, entries in _grouped(items):
+        parts.append(f"## {section}")
         for idx, item in entries:
             parts.append(build_item_section(item, idx, languages))
 

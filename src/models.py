@@ -264,6 +264,10 @@ class RSSSourceConfig(BaseModel):
     # This Week in Rust, Cloudflare) have nothing inside a 24h window, so the
     # global `--hours` would silently drop them on nearly every run.
     max_age_hours: Optional[int] = None
+    # Per-feed cap on how many items to keep. Widening `max_age_hours` on a
+    # backlog-heavy feed can otherwise flood a run: LangChain's archive alone
+    # contributed 79 of 381 fetched items, and every item costs an LLM call.
+    fetch_limit: Optional[int] = None
 
 
 class RedditSubredditConfig(BaseModel):
