@@ -165,7 +165,9 @@
         "enabled": true,
         "category": "llm-inference",
         "profile": "tech-blog",
-        "content_extractor": "trafilatura"
+        "content_extractor": "trafilatura",
+        "max_age_hours": 720,
+        "fetch_limit": 4
       },
       {
         "name": "Sean Goedecke",
@@ -204,7 +206,9 @@
         "enabled": true,
         "category": "ai-infra",
         "profile": "tech-blog",
-        "content_extractor": "trafilatura"
+        "content_extractor": "trafilatura",
+        "max_age_hours": 504,
+        "fetch_limit": 4
       },
       {
         "name": "Hugging Face Blog",
@@ -212,7 +216,9 @@
         "enabled": true,
         "category": "ai-infra",
         "profile": "tech-blog",
-        "content_extractor": "trafilatura"
+        "content_extractor": "trafilatura",
+        "max_age_hours": 336,
+        "fetch_limit": 4
       },
       {
         "name": "Google DeepMind Blog",
@@ -220,7 +226,9 @@
         "enabled": true,
         "category": "ai-research",
         "profile": "tech-news",
-        "content_extractor": "trafilatura"
+        "content_extractor": "trafilatura",
+        "max_age_hours": 504,
+        "fetch_limit": 4
       },
       {
         "name": "NVIDIA AI Blog",
@@ -228,7 +236,9 @@
         "enabled": true,
         "category": "ai-infra",
         "profile": "tech-news",
-        "content_extractor": "trafilatura"
+        "content_extractor": "trafilatura",
+        "max_age_hours": 336,
+        "fetch_limit": 4
       },
       {
         "name": "OpenAI Blog",
@@ -236,7 +246,9 @@
         "enabled": true,
         "category": "ai-agents",
         "profile": "tech-news",
-        "content_extractor": "trafilatura"
+        "content_extractor": "trafilatura",
+        "max_age_hours": 336,
+        "fetch_limit": 5
       },
       {
         "name": "Meta Engineering",
@@ -244,15 +256,18 @@
         "enabled": true,
         "category": "ai-infra",
         "profile": "tech-blog",
-        "content_extractor": "trafilatura"
+        "content_extractor": "trafilatura",
+        "max_age_hours": 504,
+        "fetch_limit": 4
       },
       {
         "name": "Lilian Weng",
         "url": "https://lilianweng.github.io/index.xml",
-        "enabled": true,
+        "enabled": false,
         "category": "ai-research",
         "profile": "tech-blog",
-        "content_extractor": "trafilatura"
+        "content_extractor": "trafilatura",
+        "max_age_hours": 1440
       },
       {
         "name": "Apple Machine Learning",
@@ -260,7 +275,9 @@
         "enabled": true,
         "category": "ai-infra",
         "profile": "tech-blog",
-        "content_extractor": "trafilatura"
+        "content_extractor": "trafilatura",
+        "max_age_hours": 720,
+        "fetch_limit": 4
       },
       {
         "name": "Together AI Blog",
@@ -268,28 +285,36 @@
         "enabled": true,
         "category": "ai-infra",
         "profile": "tech-blog",
-        "content_extractor": "trafilatura"
+        "content_extractor": "trafilatura",
+        "max_age_hours": 720,
+        "fetch_limit": 4
       },
       {
         "name": "LangChain Blog",
-        "url": "https://blog.langchain.dev/rss/",
+        "url": "https://www.langchain.com/blog/rss.xml",
         "enabled": true,
         "profile": "tech-blog",
-        "category": "ai-agents"
+        "category": "ai-agents",
+        "max_age_hours": 504,
+        "fetch_limit": 5
       },
       {
         "name": "Latent Space",
         "url": "https://www.latent.space/feed",
         "enabled": true,
         "profile": "tech-blog",
-        "category": "ai-agents"
+        "category": "ai-agents",
+        "max_age_hours": 504,
+        "fetch_limit": 5
       },
       {
         "name": "The New Stack",
         "url": "https://thenewstack.io/blog/feed/",
         "enabled": true,
         "profile": "tech-blog",
-        "category": "ai-infra"
+        "category": "ai-infra",
+        "max_age_hours": 168,
+        "fetch_limit": 5
       },
       {
         "name": "GitHub Blog",
@@ -303,14 +328,18 @@
         "url": "https://aws.amazon.com/blogs/machine-learning/feed/",
         "enabled": true,
         "profile": "tech-blog",
-        "category": "ai-infra"
+        "category": "ai-infra",
+        "max_age_hours": 336,
+        "fetch_limit": 5
       },
       {
         "name": "Google AI Blog",
         "url": "https://blog.google/technology/ai/rss/",
         "enabled": true,
         "profile": "tech-blog",
-        "category": "ai-research"
+        "category": "ai-research",
+        "max_age_hours": 336,
+        "fetch_limit": 4
       },
       {
         "name": "Rust Blog",
@@ -318,7 +347,8 @@
         "enabled": true,
         "profile": "tech-news",
         "category": "rust-go",
-        "max_age_hours": 240
+        "max_age_hours": 240,
+        "fetch_limit": 3
       },
       {
         "name": "This Week in Rust",
@@ -326,7 +356,8 @@
         "enabled": true,
         "profile": "tech-news",
         "category": "rust-go",
-        "max_age_hours": 240
+        "max_age_hours": 240,
+        "fetch_limit": 3
       },
       {
         "name": "Rust Analyzer",
@@ -334,7 +365,8 @@
         "enabled": true,
         "profile": "tech-news",
         "category": "rust-go",
-        "max_age_hours": 336
+        "max_age_hours": 336,
+        "fetch_limit": 3
       },
       {
         "name": "Go Blog",
@@ -342,7 +374,8 @@
         "enabled": true,
         "profile": "tech-news",
         "category": "rust-go",
-        "max_age_hours": 720
+        "max_age_hours": 720,
+        "fetch_limit": 3
       },
       {
         "name": "Cloudflare Rust",
@@ -350,7 +383,8 @@
         "enabled": true,
         "profile": "tech-news",
         "category": "rust-go",
-        "max_age_hours": 1080
+        "max_age_hours": 1080,
+        "fetch_limit": 3
       },
       {
         "name": "Anyscale Blog",
@@ -358,7 +392,8 @@
         "enabled": true,
         "profile": "tech-news",
         "category": "llm-inference",
-        "max_age_hours": 720
+        "max_age_hours": 720,
+        "fetch_limit": 3
       },
       {
         "name": "Neural Magic Blog",
@@ -366,14 +401,17 @@
         "enabled": true,
         "profile": "tech-news",
         "category": "llm-inference",
-        "max_age_hours": 720
+        "max_age_hours": 720,
+        "fetch_limit": 3
       },
       {
         "name": "Ollama Blog",
         "url": "https://ollama.com/blog/rss.xml",
         "enabled": true,
         "profile": "tech-news",
-        "category": "llm-inference"
+        "category": "llm-inference",
+        "max_age_hours": 720,
+        "fetch_limit": 3
       },
       {
         "name": "GitHub Changelog",
@@ -381,7 +419,8 @@
         "enabled": true,
         "profile": "tech-blog",
         "category": "oss-tools",
-        "max_age_hours": 168
+        "max_age_hours": 168,
+        "fetch_limit": 5
       },
       {
         "name": "AWS Open Source Blog",
@@ -397,7 +436,8 @@
         "enabled": true,
         "profile": "tech-blog",
         "category": "oss-tools",
-        "max_age_hours": 168
+        "max_age_hours": 168,
+        "fetch_limit": 8
       },
       {
         "name": "LWN.net Headlines",
@@ -405,7 +445,8 @@
         "enabled": true,
         "profile": "tech-blog",
         "category": "oss-tools",
-        "max_age_hours": 168
+        "max_age_hours": 168,
+        "fetch_limit": 6
       }
     ],
     "reddit": {
@@ -455,7 +496,7 @@
       "reply_min_likes": 5,
       "profile": "tech-news",
       "mode": "playwright",
-      "category": "ai-tech"
+      "category": "ai-agents"
     },
     "openbb": {
       "enabled": false,
@@ -542,37 +583,49 @@
       "finance-news"
     ],
     "category_groups": {
-      "ai": {
-        "name": "AI & Infra",
-        "limit": 11,
+      "agents": {
+        "name": "AI Agents",
+        "limit": 6,
         "categories": [
-          "ai-tech",
-          "ai-agents",
-          "ai-infra",
-          "ai-research",
-          "ai-tools",
-          "llm-inference",
-          "cuda",
-          "software-engineering"
+          "ai-agents"
         ]
       },
-      "rust_go": {
-        "name": "Rust & Go",
-        "limit": 1,
+      "infra": {
+        "name": "LLM Infra",
+        "limit": 5,
+        "categories": [
+          "ai-infra",
+          "llm-inference",
+          "ai-research",
+          "cuda"
+        ]
+      },
+      "langs": {
+        "name": "Languages",
+        "limit": 2,
         "categories": [
           "rust-go"
         ]
       },
-      "oss_tools": {
+      "oss": {
         "name": "Open Source Tools",
         "limit": 1,
         "categories": [
-          "oss-tools"
+          "oss-tools",
+          "ai-tools",
+          "software-engineering"
+        ]
+      },
+      "other": {
+        "name": "Other Tech",
+        "limit": 4,
+        "categories": [
+          "ai-tech"
         ]
       },
       "finance": {
         "name": "Finance",
-        "limit": 3,
+        "limit": 2,
         "categories": [
           "finance"
         ]
