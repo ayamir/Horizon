@@ -79,6 +79,14 @@ def _deduplication_url_key(url: str) -> tuple[str, str, str, str, Optional[int],
     )
 
 
+def _item_score(item: ContentItem) -> float:
+    """Return an item's analysis score, or -1 when it has not been analyzed."""
+    processing = getattr(item, "processing", None)
+    analysis = getattr(processing, "analysis", None) if processing else None
+    score = getattr(analysis, "score", None) if analysis else None
+    return float(score) if score is not None else -1.0
+
+
 @dataclass
 class BalancedDigestResult:
     """Items and selection statistics from balanced digest filtering."""
@@ -1038,10 +1046,27 @@ class HorizonOrchestrator:
         For each item that passed the score threshold, call AI to generate
         background knowledge based on the item's actual content.
 
+        Items below `digest.enrichment_min_score` are kept in the digest but
+        skipped here; they still render from their analysis summary.
+
         Args:
             items: Important items to enrich (modified in-place)
         """
         if not items:
+            return EnrichmentBatchResult()
+
+        floor = self.config.digest.enrichment_min_score
+        to_enrich = items
+        skipped = 0
+        if floor is not None:
+            to_enrich = [item for item in items if _item_score(item) >= floor]
+            skipped = len(items) - len(to_enrich)
+
+        if not to_enrich:
+            self.console.print(
+                f"{self.icons['enrich']} No items at or above score {floor} "
+                f"to enrich\n"
+            )
             return EnrichmentBatchResult()
 
         self.console.print(
@@ -1054,9 +1079,10 @@ class HorizonOrchestrator:
             self.config.ai.languages,
             console=self.console,
         )
-        result = await enricher.enrich_batch(items)
+        result = await enricher.enrich_batch(to_enrich)
+        detail = f" ({skipped} below score {floor} skipped)" if skipped else ""
         self.console.print(
-            f"   Enriched {result.succeeded_count}/{len(items)} items"
+            f"   Enriched {result.succeeded_count}/{len(to_enrich)} items{detail}"
         )
         if result.failed_count:
             self.console.print(

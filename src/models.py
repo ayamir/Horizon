@@ -596,6 +596,10 @@ class DigestConfig(BaseModel):
     default_group: str = "other"
     default_group_limit: Optional[int] = Field(default=None, gt=0)
     profile_order: List[str] = Field(default_factory=list)
+    # Enrichment is the expensive second AI pass, and quota groups admit some
+    # low-scoring items to keep their tier populated. Items below this score
+    # stay in the digest but keep only their analysis-derived summary.
+    enrichment_min_score: Optional[float] = Field(default=None, ge=0, le=10)
 
     @field_validator("profile_order")
     @classmethod
