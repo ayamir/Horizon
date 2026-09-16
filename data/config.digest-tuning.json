@@ -6,8 +6,8 @@
     "temperature": 0.3,
     "max_tokens": 4096,
     "throttle_sec": 0,
-    "analysis_concurrency": 1,
-    "enrichment_concurrency": 1,
+    "analysis_concurrency": 6,
+    "enrichment_concurrency": 4,
     "languages": [
       "en",
       "zh"
@@ -105,14 +105,6 @@
       },
       {
         "type": "repo_releases",
-        "owner": "tokio-rs",
-        "repo": "tokio",
-        "enabled": true,
-        "profile": "tech-news",
-        "category": "rust-go"
-      },
-      {
-        "type": "repo_releases",
         "owner": "golang",
         "repo": "go",
         "enabled": true,
@@ -146,7 +138,7 @@
     ],
     "hackernews": {
       "enabled": true,
-      "fetch_top_stories": 20,
+      "fetch_top_stories": 12,
       "min_score": 140,
       "profile": "tech-news",
       "category": "ai-tech"
@@ -489,7 +481,7 @@
         "rustlang",
         "golang"
       ],
-      "fetch_limit": 10,
+      "fetch_limit": 5,
       "fetch_reply_text": false,
       "max_replies_per_tweet": 3,
       "max_tweets_to_expand": 10,
@@ -541,7 +533,7 @@
         {
           "channel": "zaihuapd",
           "enabled": true,
-          "fetch_limit": 20,
+          "fetch_limit": 10,
           "profile": [
             "tech-news",
             "finance-news"
@@ -576,7 +568,7 @@
     "time_window_hours": 24
   },
   "digest": {
-    "max_items": null,
+    "max_items": 12,
     "profile_order": [
       "tech-news",
       "tech-blog",
@@ -585,14 +577,14 @@
     "category_groups": {
       "agents": {
         "name": "AI Agents",
-        "limit": 6,
+        "limit": 5,
         "categories": [
           "ai-agents"
         ]
       },
       "infra": {
         "name": "LLM Infra",
-        "limit": 5,
+        "limit": 4,
         "categories": [
           "ai-infra",
           "llm-inference",
@@ -602,7 +594,7 @@
       },
       "langs": {
         "name": "Languages",
-        "limit": 2,
+        "limit": 1,
         "categories": [
           "rust-go"
         ]
@@ -618,14 +610,14 @@
       },
       "other": {
         "name": "Other Tech",
-        "limit": 4,
+        "limit": 3,
         "categories": [
           "ai-tech"
         ]
       },
       "finance": {
         "name": "Finance",
-        "limit": 2,
+        "limit": 1,
         "categories": [
           "finance"
         ]
