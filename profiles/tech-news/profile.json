@@ -6,6 +6,11 @@
   },
   "match": "match.md",
   "analysis": "analysis.md",
+  "content": {
+    "analysis_max_chars": 1000,
+    "enrichment_max_chars": 4000,
+    "sampling": "head-middle-tail"
+  },
   "enrichment": {
     "prompt": "enrichment.md",
     "blocks": [
