@@ -9,7 +9,6 @@
     "analysis_concurrency": 6,
     "enrichment_concurrency": 4,
     "languages": [
-      "en",
       "zh"
     ]
   },
@@ -624,7 +623,8 @@
       }
     },
     "default_group": "other",
-    "default_group_limit": null
+    "default_group_limit": null,
+    "enrichment_min_score": 6.0
   },
   "webhook": {
     "enabled": false,
