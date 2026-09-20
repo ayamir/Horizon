@@ -39,6 +39,7 @@ ENV/
 # Data files (keep structure, ignore content)
 data/config.json
 data/seen.json
+data/published_index.json
 data/summaries/*.md
 data/items/
 data/subscribers.json

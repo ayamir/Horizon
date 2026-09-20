@@ -129,6 +129,37 @@ class StorageManager:
 
         return filepath
 
+    # --- Cross-run publish history -------------------------------------
+    #
+    # Source feeds serve a rolling window, and the per-source
+    # `max_age_hours` needed for weekly publishers keeps older entries
+    # eligible for several days. Without a record of what was already
+    # published, the same item reappears on consecutive days and crowds
+    # out genuinely new material.
+
+    @property
+    def published_index_path(self) -> Path:
+        return self.data_dir / "published_index.json"
+
+    def load_published_index(self) -> dict:
+        """Load the id -> first-published-date index, tolerating damage."""
+        path = self.published_index_path
+        if not path.exists():
+            return {}
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            # A corrupt index must not block publishing; rebuilding it
+            # from the next run is cheaper than failing the digest.
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def save_published_index(self, index: dict) -> Path:
+        path = self.published_index_path
+        _atomic_write_text(path, json.dumps(index, ensure_ascii=False, indent=2, sort_keys=True))
+        return path
+
     def load_subscribers(self) -> list:
         """Loads the list of email subscribers."""
         subscribers_path = self.data_dir / "subscribers.json"

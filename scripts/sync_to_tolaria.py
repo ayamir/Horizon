@@ -45,12 +45,12 @@ CATEGORY_SECTIONS = [
     ("llm-inference", "LLM Infrastructure"),
     ("ai-research", "LLM Infrastructure"),
     ("cuda", "LLM Infrastructure"),
-    ("rust-go", "Rust & Go"),
     ("oss-tools", "Open Source Tools"),
     ("ai-tools", "Open Source Tools"),
     ("software-engineering", "Open Source Tools"),
     ("ai-tech", "其他"),
-    ("finance", "财经"),
+    ("rust-go", "其他"),
+    ("finance", "其他"),
     ("news", "其他"),
 ]
 

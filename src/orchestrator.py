@@ -276,6 +276,11 @@ class HorizonOrchestrator:
                     f"→ {len(merged_items)} unique items\n"
                 )
 
+            # 3b. Drop items already published on an earlier day. Feeds serve a
+            #     rolling window, so without this the same story reappears for
+            #     as many days as its source's lookback allows.
+            merged_items = self._drop_already_published(merged_items)
+
             # 4. Analyze with AI
             analyzed_items = await self.analyze_items(merged_items)
             self.console.print(
@@ -317,6 +322,9 @@ class HorizonOrchestrator:
                     f"{self.icons['save']} Exported {len(important_items)} items to: "
                     f"{export_path}\n"
                 )
+                # Record only what actually shipped, so a filtering or
+                # enrichment failure cannot retire an unpublished item.
+                self._record_published(important_items, today)
             except Exception as e:
                 self.console.print(
                     f"[yellow]{self.icons['warning']} Failed to export items: {e}[/yellow]\n"
@@ -587,6 +595,63 @@ class HorizonOrchestrator:
         if meta.get("domain"):
             return meta["domain"]
         return item.author or "unknown"
+
+    def _drop_already_published(
+        self, items: List[ContentItem]
+    ) -> List[ContentItem]:
+        """Remove items that appeared in an earlier day's digest.
+
+        Records ids so a story is published once. Repeating an item is worse
+        than dropping it: it consumes a quota slot that fresh material could
+        have used, which is how a single release stayed in the digest for six
+        consecutive days.
+        """
+        if not items:
+            return items
+
+        loader = getattr(self.storage, "load_published_index", None)
+        if loader is None:
+            return items
+        published = loader()
+        if not published:
+            return items
+
+        fresh = [item for item in items if item.id not in published]
+        dropped = len(items) - len(fresh)
+        if dropped:
+            self.console.print(
+                f"{self.icons['merge']} Skipped {dropped} items already "
+                f"published on an earlier day → {len(fresh)} new items\n"
+            )
+        return fresh
+
+    def _record_published(
+        self, items: List[ContentItem], date: str
+    ) -> None:
+        """Remember which items this run published, for future days."""
+        if not items:
+            return
+        loader = getattr(self.storage, "load_published_index", None)
+        saver = getattr(self.storage, "save_published_index", None)
+        if loader is None or saver is None:
+            return
+        index = loader()
+        changed = False
+        for item in items:
+            if item.id not in index:
+                index[item.id] = date
+                changed = True
+        if not changed:
+            return
+        try:
+            saver(index)
+        except OSError as exc:
+            # Losing the index only costs a repeated story, so degrade
+            # quietly rather than failing an otherwise complete run.
+            self.console.print(
+                f"[yellow]{self.icons['warning']} Could not save the published "
+                f"index: {exc}[/yellow]\n"
+            )
 
     def merge_cross_source_duplicates(self, items: List[ContentItem]) -> List[ContentItem]:
         """Merge items that point to the same URL from different sources.
